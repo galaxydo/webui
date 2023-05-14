@@ -1,5 +1,5 @@
 /*
-  WebUI Library 2.3.0
+  WebUI Library 2.4.0
   http://_webui_core.me
   https://github.com/webui-dev/webui
   Copyright (c) 2020-2023 Hassan Draga.
@@ -9,6 +9,15 @@
 */
 
 // -- Third-party ---------------------
+#ifdef WEBUI_SSL
+    // OpenSSL
+    #include <openssl/bio.h>
+    #include <openssl/evp.h>
+    #include <openssl/pem.h>
+    #include <openssl/rsa.h>
+    #include <openssl/x509.h>
+#endif
+// Civetweb
 #define MG_BUF_LEN (1024 * 16)
 #include "civetweb/civetweb.h"
 
@@ -56,7 +65,7 @@ static const char* webui_javascript_bridge =
 "function _webui_start() { \n"
 "    if('WebSocket' in window) { \n"
 "        if(_webui_bind_list.includes(_webui_win_num + '/')) _webui_has_events = true; \n"
-"        _webui_ws = new WebSocket('ws://localhost:' + _webui_port + '/_webui_ws_connect'); \n"
+"        _webui_ws = new WebSocket('" WEBUI_WS_URL ":' + _webui_port + '/_webui_ws_connect'); \n"
 "        _webui_ws.binaryType = 'arraybuffer'; \n"
 "        _webui_ws.onopen = function () { \n"
 "            _webui_ws.binaryType = 'arraybuffer'; \n"
@@ -319,6 +328,8 @@ void webui_run(size_t window, const char* script) {
         printf("[User] webui_run([%zu]) -> Script: [%s]\n", window, script);
     #endif
 
+    _webui_init();
+
     size_t js_len = _webui_strlen(script);
     
     if(js_len < 1)
@@ -358,11 +369,11 @@ bool webui_script(size_t window, const char* script, size_t timeout_second, char
         printf("[User] webui_script([%zu]) -> Response Buffer Size %zu bytes \n", window, buffer_length);
     #endif
 
+    _webui_init();    
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return false;
     _webui_window_t* win = _webui_core.wins[window];
-
-    _webui_init();
 
     // Initializing response buffer
     if(buffer_length > 0)
@@ -482,6 +493,8 @@ size_t webui_get_new_window_id(void) {
         printf("[User] webui_get_new_window_id()...\n");
     #endif
 
+    _webui_init();
+
     for(size_t i = 1; i < WEBUI_MAX_ARRAY; i++) {
         if(_webui_core.wins[i] == NULL) {
             if(i > _webui_core.last_win_number)
@@ -536,6 +549,8 @@ void webui_set_kiosk(size_t window, bool status) {
         printf("[User] webui_set_kiosk([%zu])...\n", window);
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return;
     _webui_window_t* win = _webui_core.wins[window];
@@ -549,11 +564,11 @@ void webui_close(size_t window) {
         printf("[User] webui_close([%zu])...\n", window);
     #endif
 
+    _webui_init();    
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return;
     _webui_window_t* win = _webui_core.wins[window];
-
-    _webui_init();
 
     if(win->connected) {
 
@@ -576,11 +591,11 @@ void webui_destroy(size_t window) {
         printf("[User] webui_destroy([%zu])...\n", window);
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return;
     _webui_window_t* win = _webui_core.wins[window];
-
-    _webui_init();
 
     if(win->server_running) {
 
@@ -646,6 +661,8 @@ bool webui_is_shown(size_t window) {
         printf("[User] webui_is_shown([%zu])...\n", window);
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return false;
     _webui_window_t* win = _webui_core.wins[window];
@@ -658,6 +675,8 @@ void webui_set_multi_access(size_t window, bool status) {
     #ifdef WEBUI_LOG
         printf("[User] webui_set_multi_access([%zu], [%d])...\n", window, status);
     #endif
+
+    _webui_init();
 
     // Dereference
     if(_webui_core.wins[window] == NULL) return;
@@ -672,6 +691,8 @@ void webui_set_icon(size_t window, const char* icon, const char* icon_type) {
         printf("[User] webui_set_icon([%zu], [%s], [%s])...\n", window, icon, icon_type);
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return;
     _webui_window_t* win = _webui_core.wins[window];
@@ -685,6 +706,8 @@ bool webui_show(size_t window, const char* content) {
     #ifdef WEBUI_LOG
         printf("[User] webui_show([%zu])...\n", window);
     #endif
+
+    _webui_init();
 
     // Dereference
     if(_webui_core.wins[window] == NULL) return false;
@@ -703,6 +726,8 @@ bool webui_show_browser(size_t window, const char* content, size_t browser) {
         printf("[User] webui_show_browser([%zu], [%zu])...\n", window, browser);
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return false;
     _webui_window_t* win = _webui_core.wins[window];
@@ -716,11 +741,11 @@ size_t webui_bind(size_t window, const char* element, void (*func)(webui_event_t
         printf("[User] webui_bind([%zu], [%s], [0x%p])...\n", window, element, func);
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return 0;
     _webui_window_t* win = _webui_core.wins[window];
-
-    _webui_init();
 
     int len = 0;
     if(_webui_is_empty(element))
@@ -761,6 +786,8 @@ const char* webui_get_string(webui_event_t* e) {
         printf("[User] webui_get_string()...\n");
     #endif
 
+    _webui_init();
+
     if(e->data != NULL) {
         size_t len = _webui_strlen(e->data);
         if(len > 0 && len <= WEBUI_MAX_BUF)
@@ -775,6 +802,8 @@ long long int webui_get_int(webui_event_t* e) {
     #ifdef WEBUI_LOG
         printf("[User] webui_get_int()...\n");
     #endif
+
+    _webui_init();
 
     char* endptr;
 
@@ -793,6 +822,8 @@ bool webui_get_bool(webui_event_t* e) {
         printf("[User] webui_get_bool()...\n");
     #endif
 
+    _webui_init();
+
     const char* str = webui_get_string(e);
     if(str[0] == 't' || str[0] == 'T') // true || True
         return true;
@@ -805,6 +836,8 @@ void webui_return_int(webui_event_t* e, long long int n) {
     #ifdef WEBUI_LOG
         printf("[User] webui_return_int([%lld])...\n", n);
     #endif
+
+    _webui_init();
 
     // Dereference
     if(_webui_core.wins[e->window] == NULL) return;
@@ -833,6 +866,8 @@ void webui_return_string(webui_event_t* e, char* s) {
     #ifdef WEBUI_LOG
         printf("[User] webui_return_string([%s])...\n", s);
     #endif
+
+    _webui_init();
 
     if(_webui_is_empty(s))
         return;
@@ -865,6 +900,8 @@ void webui_return_bool(webui_event_t* e, bool b) {
         printf("[User] webui_return_bool([%d])...\n", b);
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[e->window] == NULL) return;
     _webui_window_t* win = _webui_core.wins[e->window];
@@ -892,6 +929,8 @@ char* webui_encode(const char* str) {
     #ifdef WEBUI_LOG
         printf("[User] webui_encode()...\n");
     #endif
+
+    _webui_init();
 
     size_t len = strlen(str);
     if(len < 1)
@@ -930,6 +969,8 @@ char* webui_decode(const char* str) {
         printf("[User] webui_decode()...\n");
     #endif
 
+    _webui_init();
+
     size_t len = strlen(str);
     if(len < 1)
         return NULL;
@@ -967,6 +1008,8 @@ void webui_free(void* ptr) {
         printf("[User] webui_free([0x%p])...\n", ptr);
     #endif
 
+    _webui_init();
+
     _webui_free_mem(ptr);
 }
 
@@ -975,6 +1018,8 @@ void webui_exit(void) {
     #ifdef WEBUI_LOG
         printf("[User] webui_exit()...\n");
     #endif
+
+    _webui_init();
 
     #ifndef WEBUI_LOG
         // Close all opened windows
@@ -1073,16 +1118,56 @@ void webui_set_runtime(size_t window, size_t runtime) {
         printf("[User] webui_script_runtime([%zu], [%zu])...\n", window, runtime);
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return;
     _webui_window_t* win = _webui_core.wins[window];
-
-    _webui_init();
 
     if(runtime != Deno && runtime != NodeJS)
         win->runtime = None;
     else
         win->runtime = runtime;
+}
+
+bool webui_set_tls_certificate(const char* certificate_pem, const char* private_key_pem) {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webui_set_tls_certificate()...\n");
+    #endif
+
+    _webui_init();
+
+    #ifdef WEBUI_SSL
+        if(!_webui_is_empty(certificate_pem) && !_webui_is_empty(private_key_pem)) {
+
+            size_t certificate_len = strlen(certificate_pem);
+            size_t private_key_len = strlen(private_key_pem);
+
+            if(certificate_len >= WEBUI_SSL_SIZE) certificate_len = (WEBUI_SSL_SIZE - 1);
+            if(private_key_len >= WEBUI_SSL_SIZE) private_key_len = (WEBUI_SSL_SIZE - 1);
+
+            char* ssl_cert = (char*)_webui_malloc(certificate_len);
+            char* ssl_key = (char*)_webui_malloc(private_key_len);
+
+            snprintf(ssl_cert, certificate_len, "%s", certificate_pem);
+            snprintf(ssl_key, private_key_len, "%s", private_key_pem);
+
+            _webui_core.ssl_cert = ssl_cert;
+            _webui_core.ssl_key = ssl_key;
+
+            #ifdef WEBUI_LOG
+                printf("[User] webui_set_tls_certificate() -> SSL/TLS Certificate:\n");
+                printf("- - -[Cert]- - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - -\n", (const char*)_webui_core.ssl_cert);
+                printf("[User] webui_set_tls_certificate() -> SSL/TLS Private Key:\n");
+                printf("- - -[Key]- - - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - - -\n", (const char*)_webui_core.ssl_key);
+            #endif
+
+            return true;
+        }
+    #endif
+
+    return false;
 }
 
 // -- Interface's Functions ----------------
@@ -1091,6 +1176,8 @@ static void _webui_interface_bind_handler(webui_event_t* e) {
     #ifdef WEBUI_LOG
         printf("[Core]\t\t_webui_interface_bind_handler()...\n");
     #endif
+
+    _webui_init();
 
     // Dereference
     if(_webui_core.wins[e->window] == NULL) return;
@@ -1135,6 +1222,8 @@ size_t webui_interface_bind(size_t window, const char* element, void (*func)(siz
         printf("[User] webui_interface_bind()...\n");
     #endif
 
+    _webui_init();
+
     // Bind
     size_t cb_index = webui_bind(window, element, _webui_interface_bind_handler);
     _webui_core.cb_interface[cb_index] = func;
@@ -1148,6 +1237,8 @@ void webui_interface_set_response(size_t window, size_t event_number, const char
         printf("[User] webui_interface_set_response() -> event_number %zu \n", event_number);
         printf("[User] webui_interface_set_response() -> Response [%s] \n", response);
     #endif
+
+    _webui_init();
 
     // Dereference
     if(_webui_core.wins[window] == NULL) return;
@@ -1211,6 +1302,8 @@ size_t webui_interface_get_window_id(size_t window) {
         printf("[User] webui_interface_get_window_id()...\n");
     #endif
 
+    _webui_init();
+
     // Dereference
     if(_webui_core.wins[window] == NULL) return 0;
     _webui_window_t* win = _webui_core.wins[window];
@@ -1223,6 +1316,8 @@ size_t webui_interface_get_bind_id(size_t window, const char* element) {
     #ifdef WEBUI_LOG
         printf("[User] webui_interface_get_bind_id([%zu], [%s])...\n", window, element);
     #endif
+
+    _webui_init();
 
     // Dereference
     if(_webui_core.wins[window] == NULL) return 0;
@@ -1568,7 +1663,7 @@ static bool _webui_file_exist_mg(struct mg_connection *conn) {
 
     const struct mg_request_info *ri = mg_get_request_info(conn);
     const char* url = ri->local_uri;
-	size_t url_len = _webui_strlen(url);
+    size_t url_len = _webui_strlen(url);
 
     // Get file name
     file = (char*) _webui_malloc(url_len);
@@ -1644,7 +1739,7 @@ static bool _webui_socket_test_listen_mg(size_t port_num) {
         NULL, NULL
     };
     struct mg_callbacks http_callbacks;
-	struct mg_context *http_ctx;
+    struct mg_context *http_ctx;
     memset(&http_callbacks, 0, sizeof(http_callbacks));
     http_ctx = mg_start(&http_callbacks, 0, http_options);
 
@@ -3615,7 +3710,31 @@ static bool _webui_show_window(_webui_window_t* win, const char* content, bool i
             printf("[Core]\t\t_webui_show_window(FILE, [%zu])...\n", browser);
     #endif
 
-    _webui_init();
+    // TLS
+    #ifdef WEBUI_SSL
+        if(_webui_is_empty(_webui_core.ssl_cert) || _webui_is_empty(_webui_core.ssl_key)) {
+
+            #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webui_show_window() -> Generating self-signed TLS certificate...\n");
+            #endif
+
+            // Generate the SSL Certificate
+            char* ssl_cert = (char*) _webui_malloc(WEBUI_SSL_SIZE);
+            char* ssl_key = (char*) _webui_malloc(WEBUI_SSL_SIZE);
+            if(!_webui_generate_self_signed_cert(ssl_cert, ssl_key))
+                _webui_panic();
+
+            _webui_core.ssl_cert = ssl_cert;
+            _webui_core.ssl_key = ssl_key;
+
+            #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webui_show_window() -> Self-signed SSL/TLS Certificate:\n");
+                printf("- - -[Cert]- - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - -\n", (const char*)_webui_core.ssl_cert);
+                printf("[Core]\t\t_webui_show_window() -> Self-signed SSL/TLS Key:\n");
+                printf("- - -[Key]- - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - -\n", (const char*)_webui_core.ssl_key);
+            #endif
+        }
+    #endif
 
     char* url = NULL;
     size_t port = (win->server_port == 0 ? _webui_get_free_port() : win->server_port);
@@ -3636,7 +3755,7 @@ static bool _webui_show_window(_webui_window_t* win, const char* content, bool i
         // Generate the URL
         size_t url_len = 32; // [http][domain][port]
         url = (char*) _webui_malloc(url_len);
-        sprintf(url, "http://localhost:%zu", port);
+        sprintf(url, WEBUI_URL ":%zu", port);
     }
     else {
 
@@ -3647,7 +3766,7 @@ static bool _webui_show_window(_webui_window_t* win, const char* content, bool i
         // Generate the URL
         size_t url_len = 32 + _webui_strlen(content); // [http][domain][port][file]
         url = (char*) _webui_malloc(url_len);
-        sprintf(url, "http://localhost:%zu/%s", port, content);
+        sprintf(url, WEBUI_URL ":%zu/%s", port, content);
     }
 
     // Set URL
@@ -4168,8 +4287,16 @@ static void _webui_init(void) {
     if(_webui_core.initialized)
         return;    
 
+    #ifdef _WIN32
+        #define WEBUI_OS "Microsoft Windows"
+    #elif __APPLE__
+        #define WEBUI_OS "Apple macOS"
+    #else
+        #define WEBUI_OS "GNU Linux"
+    #endif
+
     #ifdef WEBUI_LOG
-        printf("[Core]\t\tWebUI v%s \n", WEBUI_VERSION);
+        printf("[Core]\t\tWebUI v%s x64 %s (%s)\n", WEBUI_VERSION, WEBUI_SECURE, WEBUI_OS);
         printf("[Core]\t\t_webui_init()...\n");
     #endif
 
@@ -4179,8 +4306,14 @@ static void _webui_init(void) {
     _webui_core.startup_timeout = WEBUI_DEF_TIMEOUT;
     _webui_core.executable_path = _webui_get_current_path();
 
-    // Initializing server services
-    mg_init_library(0);
+    #ifdef WEBUI_SSL
+        // Initializing server services with TLS features
+        if(mg_init_library(MG_FEATURES_TLS) != MG_FEATURES_TLS)
+            _webui_panic();
+    #else
+        // Initializing server services
+        mg_init_library(0);
+    #endif
 }
 
 static size_t _webui_get_cb_index(char* webui_internal_id) {
@@ -4633,7 +4766,7 @@ static int _webui_ws_data_handler(struct mg_connection *conn, int opcode, char* 
         case MG_WEBSOCKET_OPCODE_PONG: {
             break;
         }
-	}
+    }
 
     // OK
     return 1;
@@ -4688,6 +4821,51 @@ static void _webui_ws_close_handler(const struct mg_connection *conn, void *_win
     }
 }
 
+// TLS
+
+#ifdef WEBUI_SSL
+    static int _webui_tls_initialization(void* ssl_ctx, void* ptr) {
+
+        #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webui_tls_initialization()...\n");
+        #endif
+
+        SSL_CTX* ctx = (SSL_CTX*)ssl_ctx;
+
+        // Load Certificate
+        BIO *bio_cert = BIO_new_mem_buf((void*)_webui_core.ssl_cert, -1);
+        X509 *cert = PEM_read_bio_X509(bio_cert, NULL, 0, NULL);
+        if (cert == NULL) {
+            _webui_panic();
+            return -1;
+        }
+        if (SSL_CTX_use_certificate(ctx, cert) <= 0) {
+            _webui_panic();
+            return -1;
+        }
+        X509_free(cert);
+        BIO_free(bio_cert);
+
+        // Load Key
+        BIO *bio_key = BIO_new_mem_buf((void*)_webui_core.ssl_key, -1);
+        EVP_PKEY *private_key = PEM_read_bio_PrivateKey(bio_key, NULL, 0, NULL);
+        if (private_key == NULL) {
+            _webui_panic();
+            return -1;
+        }
+        if (SSL_CTX_use_PrivateKey(ctx, private_key) <= 0) {
+            _webui_panic();
+            return -1;
+        }
+        EVP_PKEY_free(private_key);
+        BIO_free(bio_key);
+
+        return 0;
+    } 
+#endif
+
+// Server
+
 static WEBUI_SERVER_START
 {
     #ifdef WEBUI_LOG
@@ -4713,13 +4891,23 @@ static WEBUI_SERVER_START
     if(_webui_core.startup_timeout > 30)
         _webui_core.startup_timeout = 30;
     
-    // HTTP Port
-    char* server_port = (char*) _webui_malloc(16);
-    sprintf(server_port, "%zu", win->server_port);
+    #ifdef WEBUI_SSL
+        // Secure HTTP Port
+        char* server_port = (char*) _webui_malloc(16);
+        sprintf(server_port, "%zus", win->server_port);
 
-    // WS Port
-    char* ws_port = (char*) _webui_malloc(16);
-    sprintf(ws_port, "%zu", win->ws_port);
+        // Secure WS Port
+        char* ws_port = (char*) _webui_malloc(16);
+        sprintf(ws_port, "%zus", win->ws_port);
+    #else
+        // HTTP Port
+        char* server_port = (char*) _webui_malloc(16);
+        sprintf(server_port, "%zu", win->server_port);
+
+        // WS Port
+        char* ws_port = (char*) _webui_malloc(16);
+        sprintf(ws_port, "%zu", win->ws_port);
+    #endif
 
     // Start HTTP Server
     const char* http_options[] = {
@@ -4728,32 +4916,54 @@ static WEBUI_SERVER_START
         "access_control_allow_headers", "*",
         "access_control_allow_methods", "*",
         "access_control_allow_origin", "*",
+        #ifdef WEBUI_SSL
+            "authentication_domain", WEBUI_DOMAIN,
+            "enable_auth_domain_check", "no",
+            "ssl_protocol_version", "4",
+            "ssl_cipher_list", "ECDH+AESGCM+AES256:!aNULL:!MD5:!DSS",
+            "strict_transport_security_max_age", WEBUI_SSL_EXPIRE_STR,
+        #endif
         NULL, NULL
     };
     struct mg_callbacks http_callbacks;
-	struct mg_context *http_ctx;
+    struct mg_context *http_ctx;
     memset(&http_callbacks, 0, sizeof(http_callbacks));
-	http_callbacks.log_message = _webui_http_log;
+    #ifdef WEBUI_SSL
+        http_callbacks.init_ssl = _webui_tls_initialization; 
+    #endif
+    http_callbacks.log_message = _webui_http_log;    
     http_ctx = mg_start(&http_callbacks, 0, http_options);
     mg_set_request_handler(http_ctx, "/", _webui_http_handler, (void*)win);
 
     // Start WS Server
-    struct mg_callbacks ws_callbacks = {0};
-    struct mg_init_data ws_mg_start_init_data = {0};
-	ws_mg_start_init_data.callbacks = &ws_callbacks;
-	ws_mg_start_init_data.user_data = (void*)win;
+    struct mg_callbacks ws_callbacks;
+    struct mg_init_data ws_mg_start_init_data;
+    memset(&ws_callbacks, 0, sizeof(ws_callbacks));
+    memset(&ws_mg_start_init_data, 0, sizeof(ws_mg_start_init_data));
+    #ifdef WEBUI_SSL
+        ws_callbacks.init_ssl = _webui_tls_initialization; 
+    #endif
+    ws_mg_start_init_data.callbacks = &ws_callbacks;
+    ws_mg_start_init_data.user_data = (void*)win;
     const char* ws_server_options[] = {
         "listening_ports", ws_port,
         "document_root", "/_webui_ws_connect",
         "websocket_timeout_ms", "30000",
         "enable_websocket_ping_pong", "yes",
+        #ifdef WEBUI_SSL
+            "authentication_domain", WEBUI_DOMAIN,
+            "enable_auth_domain_check", "no",
+            "ssl_protocol_version", "4",
+            "ssl_cipher_list", "ECDH+AESGCM+AES256:!aNULL:!MD5:!DSS",
+            "strict_transport_security_max_age", WEBUI_SSL_EXPIRE_STR,
+        #endif
         NULL, NULL
     };
-	ws_mg_start_init_data.configuration_options = ws_server_options;
+    ws_mg_start_init_data.configuration_options = ws_server_options;
     struct mg_error_data ws_mg_start_error_data = {0};
-	char ws_errtxtbuf[256] = {0};
-	ws_mg_start_error_data.text = ws_errtxtbuf;
-	ws_mg_start_error_data.text_buffer_size = sizeof(ws_errtxtbuf);
+    char ws_errtxtbuf[256] = {0};
+    ws_mg_start_error_data.text = ws_errtxtbuf;
+    ws_mg_start_error_data.text_buffer_size = sizeof(ws_errtxtbuf);
     struct mg_context *ws_ctx = mg_start2(&ws_mg_start_init_data, &ws_mg_start_error_data);
 
     if(http_ctx && ws_ctx) {
@@ -5291,7 +5501,7 @@ static WEBUI_CB
                 if(VALUE_TYPE == REG_SZ)
                     sprintf(value, "%S", (LPCWSTR)VALUE_DATA);
                 else if(VALUE_TYPE == REG_DWORD)
-                    sprintf(value, "%zu", *((DWORD *)VALUE_DATA));
+                    sprintf(value, "%lu", *((DWORD *)VALUE_DATA));
                 
                 RegCloseKey(hKey);
                 return true;
@@ -5305,4 +5515,65 @@ static WEBUI_CB
         return true;
     }
     
+#endif
+
+#ifdef WEBUI_SSL
+    bool _webui_generate_self_signed_cert(char* ssl_cert, char* ssl_key) {
+
+        #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webui_generate_self_signed_cert()...\n");
+        #endif
+
+        int ret = 0;
+        int bits = 2048;
+        int serial = 0;
+
+        RSA* rsa = RSA_new();
+        BIGNUM* bignum = BN_new();
+        BN_set_word(bignum, RSA_F4);
+        RSA_generate_key_ex(rsa, bits, bignum, NULL);
+
+        EVP_PKEY* pkey = EVP_PKEY_new();
+        ret = EVP_PKEY_assign_RSA(pkey, rsa);
+        if(ret != 1) return false;
+
+        X509* x509 = X509_new();
+        X509_set_version(x509, 2);
+        ASN1_INTEGER_set(X509_get_serialNumber(x509), serial);
+        X509_gmtime_adj(X509_get_notBefore(x509), 0);
+        X509_gmtime_adj(X509_get_notAfter(x509), (WEBUI_SSL_EXPIRE));
+
+        X509_NAME* name = X509_get_subject_name(x509);
+        X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, "CA", -1, -1, 0); // Country
+        X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, "WebUI", -1, -1, 0); // Organization
+        X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC, "WebUI", -1, -1, 0); // Organizational Unit
+        X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, "WebUI", -1, -1, 0); // Common Name
+        X509_NAME_add_entry_by_txt(name, "ST", MBSTRING_ASC, "WebUI", -1, -1, 0); // State
+        X509_NAME_add_entry_by_txt(name, "L", MBSTRING_ASC, "WebUI", -1, -1, 0); // Locality
+
+        X509_set_issuer_name(x509, name);
+        X509_set_pubkey(x509, pkey);
+        ret = X509_sign(x509, pkey, EVP_sha256());
+        if(ret <= 0) return false;
+
+        BIO* bio_cert = BIO_new(BIO_s_mem());
+        ret = PEM_write_bio_X509(bio_cert, x509);
+        if(ret != 1) return false;
+        memset(ssl_cert, 0, WEBUI_SSL_SIZE);
+        BIO_read(bio_cert, ssl_cert, (WEBUI_SSL_SIZE - 1));
+
+        BIO* bio_key = BIO_new(BIO_s_mem());
+        ret = PEM_write_bio_PrivateKey(bio_key, pkey, NULL, NULL, 0, NULL, NULL);
+        if(ret != 1) return false;
+        memset(ssl_key, 0, WEBUI_SSL_SIZE);
+        BIO_read(bio_key, ssl_key, (WEBUI_SSL_SIZE - 1));
+
+        X509_free(x509);
+        EVP_PKEY_free(pkey);
+        BN_free(bignum);
+        BIO_free_all(bio_cert);
+        BIO_free_all(bio_key);
+
+        return true;
+    }
 #endif

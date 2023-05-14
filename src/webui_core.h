@@ -1,5 +1,5 @@
 /*
-  WebUI Library 2.3.0
+  WebUI Library 2.4.0
   http://webui.me
   https://github.com/webui-dev/webui
   Copyright (c) 2020-2023 Hassan Draga.
@@ -28,6 +28,21 @@
 #define WEBUI_DEFAULT_PATH      "."         // Default root path
 #define WEBUI_DEF_TIMEOUT       (30)        // Default startup timeout in seconds
 #define WEBUI_MAX_TIMEOUT       (60)        // Maximum startup timeout in seconds the user can set
+#define WEBUI_SSL_SIZE          (4096)      // SSL Size
+#define WEBUI_SSL_EXPIRE        (72*60*60)  // SSL Expires (Integer)
+#define WEBUI_SSL_EXPIRE_STR    "259201"    // SSL Expires (String)
+
+#ifdef WEBUI_SSL
+    #define WEBUI_SECURE "TLS-Encryption"
+    #define WEBUI_DOMAIN "127.0.0.1"
+    #define WEBUI_URL "https://" WEBUI_DOMAIN
+    #define WEBUI_WS_URL "wss://" WEBUI_DOMAIN
+#else
+    #define WEBUI_SECURE "Non-Crypted"
+    #define WEBUI_DOMAIN "127.0.0.1"
+    #define WEBUI_URL "http://" WEBUI_DOMAIN
+    #define WEBUI_WS_URL "ws://" WEBUI_DOMAIN
+#endif
 
 typedef struct _webui_timer_t {
     struct timespec start;
@@ -93,6 +108,10 @@ typedef struct _webui_core_t {
     _webui_window_t* wins[WEBUI_MAX_ARRAY];
     size_t last_win_number;
     bool server_handled;
+    #ifdef WEBUI_SSL
+        uint8_t* ssl_cert;
+        uint8_t* ssl_key;
+    #endif
 } _webui_core_t;
 
 typedef struct _webui_cb_arg_t {
@@ -111,7 +130,7 @@ typedef struct _webui_cmd_async_t {
     char* cmd;
 } _webui_cmd_async_t;
 
-// -- Definitions ---------------------
+// -- Core Definitions ----------------
 #ifdef _WIN32
     static const char* webui_sep = "\\";
     static DWORD WINAPI _webui_cb(LPVOID _arg);
@@ -120,7 +139,6 @@ typedef struct _webui_cmd_async_t {
     static int _webui_system_win32_out(const char *cmd, char **output, bool show);
     static bool _webui_socket_test_listen_win32(size_t port_num);
     static bool _webui_get_windows_reg_value(HKEY key, LPCWSTR reg, LPCWSTR value_name, char value[WEBUI_MAX_PATH]);
-
     #define WEBUI_CB DWORD WINAPI _webui_cb(LPVOID _arg)
     #define WEBUI_SERVER_START DWORD WINAPI _webui_server_start(LPVOID arg)
     #define THREAD_RETURN return 0;
@@ -128,12 +146,10 @@ typedef struct _webui_cmd_async_t {
     static const char* webui_sep = "/";
     static void* _webui_cb(void* _arg);
     static void* _webui_run_browser_task(void* _arg);
-
     #define WEBUI_CB void* _webui_cb(void* _arg)
     #define WEBUI_SERVER_START void* _webui_server_start(void* arg)
     #define THREAD_RETURN pthread_exit(NULL);
 #endif
-
 static void _webui_init(void);
 static bool _webui_show(_webui_window_t* win, const char* content, size_t browser);
 static size_t _webui_get_cb_index(char* webui_internal_id);
@@ -189,6 +205,7 @@ static void _webui_panic(void);
 static void _webui_kill_pid(size_t pid);
 static _webui_window_t* _webui_dereference_win_ptr(void* ptr);
 
+// -- Civetweb Definitions ------------
 static void _webui_http_send(struct mg_connection *conn, const char* mime_type, const char* body);
 static int _webui_http_log(const struct mg_connection *conn, const char* message);
 static int _webui_http_handler(struct mg_connection *conn, void *_win);
@@ -196,8 +213,12 @@ static int _webui_ws_connect_handler(const struct mg_connection *conn, void *_wi
 static void _webui_ws_ready_handler(struct mg_connection *conn, void *_win);
 static int _webui_ws_data_handler(struct mg_connection *conn, int opcode, char* data, size_t datasize, void *_win);
 static void _webui_ws_close_handler(const struct mg_connection *conn, void *_win);
-
 static WEBUI_SERVER_START;
 static WEBUI_CB;
+
+// -- OpenSSL Definitions -------------
+#ifdef WEBUI_SSL
+    bool _webui_generate_self_signed_cert(char* ssl_cert, char* ssl_key);
+#endif
 
 #endif /* _WEBUI_CORE_H */

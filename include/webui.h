@@ -1,5 +1,5 @@
 /*
-  WebUI Library 2.3.0
+  WebUI Library 2.4.0
   http://webui.me
   https://github.com/webui-dev/webui
   Copyright (c) 2020-2023 Hassan Draga.
@@ -11,7 +11,7 @@
 #ifndef _WEBUI_H
 #define _WEBUI_H
 
-#define WEBUI_VERSION "2.3.0"
+#define WEBUI_VERSION "2.4.0"
 #define WEBUI_MAX_IDS (512)
 
 // Dynamic Library Exports
@@ -199,6 +199,10 @@ WEBUI_EXPORT char* webui_encode(const char* str);
 WEBUI_EXPORT char* webui_decode(const char* str);
 // Safely free a buffer allocated by WebUI, for example when using webui_encode().
 WEBUI_EXPORT void webui_free(void* ptr);
+
+// -- TLS -----------------------------
+// Set a custom SSL/TLS certificate and the private key in PEM format. If set empty WebUI will generate a self-signed certificate
+WEBUI_EXPORT bool webui_set_tls_certificate(const char* certificate_pem, const char* private_key_pem);
 
 // -- Interface -----------------------
 // Bind a specific html element click event with a function. Empty element means all events. This replace webui_bind(). The func is (Window, EventType, Element, Data, EventNumber)
