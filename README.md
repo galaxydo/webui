@@ -1,4 +1,4 @@
-![ScreenShot](logo/webui_240_shadow.png)
+![ScreenShot](images/logo/webui_240_shadow.png)
 
 # WebUI v2.3.0
 
@@ -6,7 +6,7 @@
 
 > Use any web browser as GUI, with your preferred language in the backend and HTML5 in the frontend, all in a lightweight portable lib.
 
-![ScreenShot](screenshot.png)
+![ScreenShot](images/screenshot.png)
 
 > :warning: **Notice**:
 > 
@@ -28,7 +28,7 @@
 
 This [text editor example](https://github.com/webui-dev/webui/tree/main/examples/C/text-editor) is written in C using WebUI as the GUI library. The final executable is portable and has less than _1 MB_ in size (_+html and css files_).
 
-![ScreenShot](webui_c_example.png)
+![ScreenShot](images/webui_c_example.png)
 
 ## CppCon 2019 Presentation
 
@@ -38,7 +38,7 @@ This [text editor example](https://github.com/webui-dev/webui/tree/main/examples
   <a href="https://www.youtube.com/watch?v=bbbcZd4cuxg"><img src="https://img.youtube.com/vi/bbbcZd4cuxg/0.jpg" alt="Embrace Modern Technology: Using HTML 5 for GUI in C++ - Borislav Stanimirov - CppCon 2019"></a>
 </div> -->
 
-![ScreenShot](cppcon_2019.png)
+![ScreenShot](images/cppcon_2019.png)
 
 ## UI & The Web Technologies
 
@@ -50,7 +50,7 @@ Today's web browsers have everything a modern UI needs. Web browsers are very so
 
 ## How does it work?
 
-![ScreenShot](webui_diagram.png)
+![ScreenShot](images/webui_diagram.png)
 
 Think of WebUI like a WebView controller, but instead of embedding the WebView controller in your program, which makes the final program big in size, and non-portable as it needs the WebView runtimes. Instead, by using WebUI, you use a tiny static/dynamic library to run any installed web browser and use it as GUI, which makes your program small, fast, and portable. **All it needs is a web browser**.
 
