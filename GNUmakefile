@@ -1,5 +1,3 @@
-SOURCE := src
-INCLUDE := include 
 BIT ?= 64
 CFLAGS ?= -fPIC -m$(BIT)
 
@@ -39,17 +37,17 @@ all: webui-shared webui-static
 folders:
 	$(MKDIR) build
 
-webui-static: $(SOURCE)/webui.c $(INCLUDE)/webui.h $(SOURCE)/civetweb/civetweb.c folders
-	$(CC) -c $(SOURCE)/civetweb/civetweb.c -o build/static-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(Os)
-	$(CC) -c $(SOURCE)/webui.c -o build/static-webui.o -I$(INCLUDE) $(CFLAGS) $(LTO) $(Os)
+webui-static: src/webui.c include/webui.h src/civetweb/civetweb.c folders
+	$(CC) -c src/civetweb/civetweb.c -o build/static-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(Os)
+	$(CC) -c src/webui.c -o build/static-webui.o -Iinclude $(CFLAGS) $(LTO) $(Os)
 	$(AR) rc build/libwebui-2-static-x$(BIT).a build/static-webui.o build/static-civetweb.o
 	ranlib build/libwebui-2-static-x$(BIT).a
 	$(STRIP) --strip-unneeded build/libwebui-2-static-x$(BIT).a
 	$(RM) build/static-*.o
 
-webui-shared: $(SOURCE)/webui.c $(INCLUDE)/webui.h $(SOURCE)/civetweb/civetweb.c folders
-	$(CC) -c $(SOURCE)/civetweb/civetweb.c -o build/shared-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(O3)
-	$(CC) -c $(SOURCE)/webui.c -o build/shared-webui.o -I$(INCLUDE) $(CFLAGS) $(LTO) $(O3)
+webui-shared: src/webui.c include/webui.h src/civetweb/civetweb.c folders
+	$(CC) -c src/civetweb/civetweb.c -o build/shared-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(O3)
+	$(CC) -c src/webui.c -o build/shared-webui.o -Iinclude $(CFLAGS) $(LTO) $(O3)
 	$(CC) -shared -o build/webui-2-x$(BIT).$(SHARED_EXTENSION) build/shared-webui.o build/shared-civetweb.o $(LTO)
 	$(STRIP) --strip-unneeded build/webui-2-x$(BIT).$(SHARED_EXTENSION)
 	$(RM) build/shared-*.o
