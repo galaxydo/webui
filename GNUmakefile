@@ -9,9 +9,7 @@ LTO ?= -flto
 ifeq ($(OS),Windows_NT)
 	CC := gcc
 	AR := ar
-	MKDIR := mkdir 
 	SHARED_EXTENSION := dll
-	RM := del /f
 	ifeq ($(BUILD_TYPE),debug)
 		STRIP := REM
 	endif
@@ -25,8 +23,6 @@ else
 endif
 
 SHARED_EXTENSION ?= so
-MKDIR ?= mkdir -p
-RM ?= rm -rf
 
 ifeq ($(BUILD_TYPE),debug)
 	O3 := -Og -g
@@ -42,7 +38,7 @@ all: webui-shared webui-static
 
 .PHONY: folders
 folders:
-	$(MKDIR) build
+	mkdir -p build
 
 webui-static: src/webui.c include/webui.h src/civetweb/civetweb.c folders
 	$(CC) -c src/civetweb/civetweb.c -o build/static-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(Os)
@@ -50,15 +46,15 @@ webui-static: src/webui.c include/webui.h src/civetweb/civetweb.c folders
 	$(AR) rc build/libwebui-2-static-x$(BIT).a build/static-webui.o build/static-civetweb.o
 	ranlib build/libwebui-2-static-x$(BIT).a
 	$(STRIP) --strip-unneeded build/libwebui-2-static-x$(BIT).a
-	$(RM) build/static-*.o
+	rm build/static-*.o
 
 webui-shared: src/webui.c include/webui.h src/civetweb/civetweb.c folders
 	$(CC) -c src/civetweb/civetweb.c -o build/shared-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(O3)
 	$(CC) -c src/webui.c -o build/shared-webui.o -Iinclude $(CFLAGS) $(LTO) $(O3)
 	$(CC) -shared -o build/webui-2-x$(BIT).$(SHARED_EXTENSION) build/shared-webui.o build/shared-civetweb.o $(LTO)
 	$(STRIP) --strip-unneeded build/webui-2-x$(BIT).$(SHARED_EXTENSION)
-	$(RM) build/shared-*.o
+	rm build/shared-*.o
 
 .PHONY: clear
 clear:
-	$(RM) build
+	rm -rf build
