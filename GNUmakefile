@@ -3,8 +3,9 @@ CFLAGS ?= -fPIC -m$(BIT)
 
 ifeq ($(CC),clang)
 	LTO := -flto=full
+	RAN := ranlib
 endif
-LTO ?= -flto
+LTO ?= -flto=auto
 
 ifeq ($(OS),Windows_NT)
 	CC := gcc
@@ -21,9 +22,11 @@ else
     ifeq ($(UNAME_S),Darwin)
 	SHARED_EXTENSION := dyn
 	STRIP := \#
+	RAN := ranlib
     endif
 endif
 
+RAN ?= gcc-ranlib
 SHARED_EXTENSION ?= so
 
 ifeq ($(BUILD_TYPE),debug)
@@ -46,8 +49,7 @@ webui-static: src/webui.c include/webui.h src/civetweb/civetweb.c folders
 	$(CC) -c src/civetweb/civetweb.c -o build/static-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(Os)
 	$(CC) -c src/webui.c -o build/static-webui.o -Iinclude $(CFLAGS) $(LTO) $(Os)
 	$(AR) rc build/libwebui-2-static-x$(BIT).a build/static-webui.o build/static-civetweb.o
-	ranlib build/libwebui-2-static-x$(BIT).a
-	$(STRIP) --strip-unneeded build/libwebui-2-static-x$(BIT).a
+	$(RAN) build/libwebui-2-static-x$(BIT).a
 	rm build/static-*.o
 
 webui-shared: src/webui.c include/webui.h src/civetweb/civetweb.c folders
