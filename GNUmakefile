@@ -11,6 +11,7 @@ ifeq ($(OS),Windows_NT)
 	AR := ar
 	SHARED_EXTENSION := dll
 	LTO :=  
+	DLL_LIB := -lws2_32
 	ifeq ($(BUILD_TYPE),debug)
 		STRIP := REM
 	endif
@@ -52,7 +53,7 @@ webui-static: src/webui.c include/webui.h src/civetweb/civetweb.c folders
 webui-shared: src/webui.c include/webui.h src/civetweb/civetweb.c folders
 	$(CC) -c src/civetweb/civetweb.c -o build/shared-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(O3)
 	$(CC) -c src/webui.c -o build/shared-webui.o -Iinclude $(CFLAGS) $(LTO) $(O3)
-	$(CC) -shared -o build/webui-2-x$(BIT).$(SHARED_EXTENSION) build/shared-webui.o build/shared-civetweb.o $(LTO)
+	$(CC) -shared -o build/webui-2-x$(BIT).$(SHARED_EXTENSION) build/shared-webui.o build/shared-civetweb.o $(LTO) $(DLL_LIB)
 	$(STRIP) --strip-unneeded build/webui-2-x$(BIT).$(SHARED_EXTENSION)
 	rm build/shared-*.o
 
