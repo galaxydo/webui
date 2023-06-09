@@ -10,6 +10,7 @@ ifeq ($(OS),Windows_NT)
 	CC := gcc
 	AR := ar
 	SHARED_EXTENSION := dll
+	LTO :=  
 	ifeq ($(BUILD_TYPE),debug)
 		STRIP := REM
 	endif
