@@ -7,6 +7,8 @@ endif
 LTO ?= -flto
 
 ifeq ($(OS),Windows_NT)
+	CC := gcc
+	AR := ar
 	MKDIR := mkdir 
 	SHARED_EXTENSION := dll
 	RM := del /f
