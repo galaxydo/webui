@@ -10,10 +10,15 @@ ifeq ($(OS),Windows_NT)
 	MKDIR := mkdir 
 	SHARED_EXTENSION := dll
 	RM := del /f
+	ifeq ($(BUILD_TYPE),debug)
+		STRIP := REM
+	endif
+
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
 	SHARED_EXTENSION := dyn
+	STRIP := \#
     endif
 endif
 
@@ -24,7 +29,7 @@ RM ?= rm -rf
 ifeq ($(BUILD_TYPE),debug)
 	O3 := -Og -g
 	Os := -Og -g
-	STRIP := \#
+	STRIP ?= \#
 endif
 
 O3 ?= -O3
