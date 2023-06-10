@@ -1,5 +1,7 @@
 BIT ?= 64
 CFLAGS ?= -fPIC -m$(BIT)
+VERSION ?= 2
+OUTDIR ?= build
 
 ifeq ($(CC),clang)
 	LTO := -flto=full
@@ -39,26 +41,24 @@ O3 ?= -O3
 Os ?= -Os
 STRIP ?= strip
 
-all: webui-shared webui-static
+all: $(OUTDIR)/libwebui-$(VERSION)-static-x$(BIT).a $(OUTDIR)/webui-$(VERSION)-x$(BIT).$(SHARED_EXTENSION)
 
-.PHONY: folders
-folders:
-	mkdir -p build
+folder:
+	mkdir -p $(OUTDIR)
 
-webui-static: src/webui.c include/webui.h src/civetweb/civetweb.c folders
-	$(CC) -c src/civetweb/civetweb.c -o build/static-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(Os)
-	$(CC) -c src/webui.c -o build/static-webui.o -Iinclude $(CFLAGS) $(LTO) $(Os)
-	$(AR) rc build/libwebui-2-static-x$(BIT).a build/static-webui.o build/static-civetweb.o
-	$(RAN) build/libwebui-2-static-x$(BIT).a
-	rm build/static-*.o
+$(OUTDIR)/civetweb-%.o: src/civetweb/civetweb.c | folder
+	$(CC) -c $< -o $@ -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) -$(subst $(OUTDIR)/civetweb-,,$*) 
 
-webui-shared: src/webui.c include/webui.h src/civetweb/civetweb.c folders
-	$(CC) -c src/civetweb/civetweb.c -o build/shared-civetweb.o -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET $(CFLAGS) $(LTO) $(O3)
-	$(CC) -c src/webui.c -o build/shared-webui.o -Iinclude $(CFLAGS) $(LTO) $(O3)
-	$(CC) -shared -o build/webui-2-x$(BIT).$(SHARED_EXTENSION) build/shared-webui.o build/shared-civetweb.o $(LTO) $(DLL_LIB)
-	$(STRIP) --strip-unneeded build/webui-2-x$(BIT).$(SHARED_EXTENSION)
-	rm build/shared-*.o
+$(OUTDIR)/libwebui-$(VERSION)-static-x$(BIT).a: src/webui.c include/webui.h $(OUTDIR)/civetweb-Os.o 
+	$(CC) -c src/webui.c -o $(OUTDIR)/static-webui.o -Iinclude $(CFLAGS) $(LTO) $(Os)
+	$(AR) rc $@ $(OUTDIR)/static-webui.o $(OUTDIR)/civetweb-Os.o
+	$(RAN) $@
+
+$(OUTDIR)/webui-$(VERSION)-x$(BIT).$(SHARED_EXTENSION): src/webui.c include/webui.h $(OUTDIR)/civetweb-O3.o
+	$(CC) -c src/webui.c -o $(OUTDIR)/shared-webui.o -Iinclude $(CFLAGS) $(LTO) $(O3)
+	$(CC) -shared -o $@ $(OUTDIR)/shared-webui.o $(OUTDIR)/civetweb-O3.o $(LTO) $(DLL_LIB)
+	$(STRIP) --strip-unneeded $@
 
 .PHONY: clear
 clear:
-	rm -rf build
+	rm -rf $(OUTDIR)
