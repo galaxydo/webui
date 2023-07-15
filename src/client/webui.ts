@@ -27,13 +27,14 @@ class WebUiClient {
 	#fnPromiseResolve: (((data: string) => unknown) | undefined)[] = []
 
 	//webui const
-	#HEADER_SIGNATURE = 221
-	#HEADER_JS = 254
-	#HEADER_JS_QUICK = 253
-	#HEADER_CLICK = 252
-	#HEADER_SWITCH = 251
-	#HEADER_CLOSE = 250
-	#HEADER_CALL_FUNC = 249
+	#HEADER_SIGNATURE = 0xdd
+	#HEADER_JS = 0xfe
+	#HEADER_JS_QUICK = 0xfd
+	#HEADER_CLICK = 0xfc
+	#HEADER_SWITCH = 0xfb
+	#HEADER_CLOSE = 0xfa
+	#HEADER_CALL_FUNC = 0xf9
+	#HEADER_CALL_INTERNAL = 0xf8
 
 	constructor({
 		port,
@@ -53,9 +54,7 @@ class WebUiClient {
 		this.#log = log
 
 		if ('webui' in globalThis) {
-			throw new Error(
-				'webui is already defined, only one instance is allowed'
-			)
+			throw new Error('webui is already defined, only one instance is allowed')
 		}
 
 		if (!('WebSocket' in window)) {
@@ -74,20 +73,15 @@ class WebUiClient {
 		} else {
 			// Handle all link click to prevent natural navigation
 			// Rebind listener if user inject new html
-			addRefreshableEventListener(
-				document.body,
-				'a',
-				'click',
-				(event) => {
-					event.preventDefault()
-					const { href } = event.target as HTMLAnchorElement
-					if (this.#isExternalLink(href)) {
-						this.#close(this.#HEADER_SWITCH, href)
-					} else {
-						this.#sendEventNavigation(href)
-					}
+			addRefreshableEventListener(document.body, 'a', 'click', (event) => {
+				event.preventDefault()
+				const { href } = event.target as HTMLAnchorElement
+				if (this.#isExternalLink(href)) {
+					this.#close(this.#HEADER_SWITCH, href)
+				} else {
+					this.#sendEventNavigation(href)
 				}
-			)
+			})
 		}
 
 		// Prevent F5 refresh
@@ -128,9 +122,7 @@ class WebUiClient {
 			this.#hasEvents = true
 		}
 
-		this.#ws = new WebSocket(
-			`ws://localhost:${this.#port}/_webui_ws_connect`
-		)
+		this.#ws = new WebSocket(`ws://localhost:${this.#port}/_webui_ws_connect`)
 		this.#ws.binaryType = 'arraybuffer'
 
 		this.#ws.onopen = () => {
@@ -151,9 +143,7 @@ class WebUiClient {
 			if (this.#closeReason === this.#HEADER_SWITCH) {
 				if (this.#log) {
 					console.log(
-						`WebUI -> Connection lost -> Navigation to [${
-							this.#closeValue
-						}]`
+						`WebUI -> Connection lost -> Navigation to [${this.#closeValue}]`
 					)
 				}
 				globalThis.location.replace(this.#closeValue)
@@ -179,6 +169,60 @@ class WebUiClient {
 
 			// Process Command
 			switch (buffer8[1]) {
+				case this.#HEADER_CALL_INTERNAL:
+					const { name, args } = JSON.parse(data8utf8)
+					if (name === 'set_size') {
+						window.resizeTo(...(args as [number, number]))
+						return
+					}
+					if (name === 'set_position') {
+						window.moveTo(...(args as [number, number]))
+						return
+					}
+					if (name === 'set_title') {
+						document.title = args[0] as string
+						return
+					}
+					if (name === 'get_title') {
+						const payload = new TextEncoder().encode(document.title)
+						const Return8 = Uint8Array.of(
+							this.#HEADER_SIGNATURE,
+							this.#HEADER_CALL_INTERNAL,
+							buffer8[2],
+							1, // no errors
+							payload.length + 1,
+							...payload,
+							0 // c-string conversion
+						)
+
+						if (this.#wsStatus) this.#ws.send(Return8.buffer)
+						return
+					}
+					if (name === 'get_size') {
+						// 32bit value to encapse all allowed screen size in unisigned int[2]
+						const payload = Uint32Array.of(
+							window.outerWidth,
+							window.outerHeight
+						)
+						// convert to 8bit datas
+						const payload8 = new Uint8Array(
+							payload.buffer,
+							payload.byteOffset,
+							payload.byteLength
+						)
+						const Return8 = Uint8Array.of(
+							this.#HEADER_SIGNATURE,
+							this.#HEADER_CALL_INTERNAL,
+							buffer8[2],
+							1, // no errors
+							payload8.length,
+							...payload8
+						)
+
+						if (this.#wsStatus) this.#ws.send(Return8.buffer)
+						return
+					}
+					break
 				case this.#HEADER_CALL_FUNC:
 					{
 						const callId = buffer8[2]
@@ -187,9 +231,7 @@ class WebUiClient {
 						}
 						if (this.#fnPromiseResolve[callId]) {
 							if (this.#log) {
-								console.log(
-									`WebUI -> Resolving reponse #${callId}...`
-								)
+								console.log(`WebUI -> Resolving reponse #${callId}...`)
 							}
 							this.#fnPromiseResolve[callId]?.(data8utf8)
 							this.#fnPromiseResolve[callId] = undefined
@@ -205,12 +247,8 @@ class WebUiClient {
 				case this.#HEADER_JS_QUICK:
 				case this.#HEADER_JS:
 					{
-						const data8utf8sanitize = data8utf8.replace(
-							/(?:\r\n|\r|\n)/g,
-							'\n'
-						)
-						if (this.#log)
-							console.log(`WebUI -> JS [${data8utf8sanitize}]`)
+						const data8utf8sanitize = data8utf8.replace(/(?:\r\n|\r|\n)/g, '\n')
+						if (this.#log) console.log(`WebUI -> JS [${data8utf8sanitize}]`)
 
 						// Get callback result
 						let FunReturn = 'undefined'
@@ -256,9 +294,7 @@ class WebUiClient {
 					if (
 						this.#hasEvents ||
 						(event.target.id !== '' &&
-							this.#bindList.includes(
-								this.#winNum + '/' + event.target?.id
-							))
+							this.#bindList.includes(this.#winNum + '/' + event.target?.id))
 					) {
 						this.#sendClick(event.target.id)
 					}
@@ -277,12 +313,7 @@ class WebUiClient {
 							0,
 							...new TextEncoder().encode(elem)
 					  )
-					: Uint8Array.of(
-							this.#HEADER_SIGNATURE,
-							this.#HEADER_CLICK,
-							0,
-							0
-					  )
+					: Uint8Array.of(this.#HEADER_SIGNATURE, this.#HEADER_CLICK, 0, 0)
 			this.#ws.send(packet.buffer)
 			if (this.#log) console.log(`WebUI -> Click [${elem}]`)
 		}
@@ -463,10 +494,7 @@ addEventListener('load', () => {
 	document.body.addEventListener('contextmenu', (event) =>
 		event.preventDefault()
 	)
-	addRefreshableEventListener(
-		document.body,
-		'input',
-		'contextmenu',
-		(event) => event.stopPropagation()
+	addRefreshableEventListener(document.body, 'input', 'contextmenu', (event) =>
+		event.stopPropagation()
 	)
 })
