@@ -8,6 +8,8 @@
   Canada.
 */
 
+#define WEBUI_LOG
+
 // 64Mb max dynamic memory allocation
 #define WEBUI_MAX_BUF (64000000)
 
@@ -2670,9 +2672,9 @@ static bool _webui_browser_create_profile_folder(_webui_window_t* win, size_t br
     const char* temp = _webui_get_temp_path();
 
     if(browser == Chrome) {
-
         // Google Chrome
-        sprintf(win->profile_path, "%s%s.WebUI%sWebUIChromeProfile", temp, webui_sep, webui_sep);
+        sprintf(win->profile_path, "%s/Library/Application Support/Google/Chrome", temp);
+        // sprintf(win->profile_path, "%s%s.WebUI%sWebUIChromeProfile", temp, webui_sep, webui_sep);
         return true;
     }
     else if(browser == Edge) {
@@ -3570,10 +3572,9 @@ static int _webui_get_browser_args(_webui_window_t* win, size_t browser, char *b
     #endif
 
     const char *chromium_options[] = {
-        "--no-first-run",
+        // "--no-first-run",
         "--no-proxy-server",
-        "--safe-mode",
-        "--disable-extensions",
+        // "--safe-mode",
         "--disable-background-mode",
         "--disable-plugins",
         "--disable-plugins-discovery",
