@@ -15,10 +15,10 @@ build/
 *.obj
 
 # Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+# *.dll
+# *.so
+# *.so.*
+# *.dylib
 
 # Compiled Static libraries
 *.lai
@@ -82,7 +82,7 @@ csx/
 
 # Python
 __pycache__/
-dist/
+# dist/
 webui2.egg-info/
 
 # Rust
