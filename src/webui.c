@@ -8,6 +8,8 @@
   Canada.
 */
 
+#define WEBUI_LOG true
+
 // 64Mb max dynamic memory allocation
 #define WEBUI_MAX_BUF (64000000)
 
@@ -4817,6 +4819,8 @@ static int _webui_get_browser_args(_webui_window_t * win, size_t browser, char* 
             // Window Position
             if (win->position_set)
                 c += sprintf(buffer + c, " --window-position=%u,%u", win->x, win->y);
+
+            c += sprintf(buffer + c, " --disable-web-security");
 
             // URL (END)
             c += sprintf(buffer + c, " %s", "--app=");
